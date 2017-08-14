@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<style type="text/css">
+		.tooltip{
+	        font-family: sans-serif;
+	        font-size: 14px;
+	        max-width: 300px;
+	        padding: 10px 20px;
+	        display: block;
+	        height: auto;
+	        position: absolute;
+	        text-align: center;
+	        border-style:solid;
+	        border-width: 1px;
+	        background-color: "white";##F0F8FF
+	        color:black;
+		}
+
+		.tooltip p{
+			color:#1E824C;
+		}
+
+	</style>
+	<title></title>
+</head>
+<body>
+<div id = 'scatterplot'></div>
+<script src="https://d3js.org/d3.v4.js"></script>
+<script type="text/javascript">
+	console.log("test");
+	
+	var margin = {top:20, right:20, bottom:30, left:40},
+		width = 1000 - margin.left - margin.right;
+		height = 500 - margin.top - margin.bottom;
+
+	//converts value to coordinates
+	var x = d3.scaleLinear()
+		.range([0, width]);
+
+	var y = d3.scaleLinear()
+		.range([height, 0]);
+
+	var xAxis = d3.axisBottom(x);
+
+	var yAxis = d3.axisLeft(y);
+
+	var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+	var svg = d3.select("#scatterplot").append("svg")
+		.attr("width", width + margin.left + margin.right)
+		.attr("height", height + margin.top + margin.bottom)
+		.append("g")
+		.attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
+
+	d3.csv("USJP.csv", function(error, data){
+		if(error) throw error;
+		//dataT = data;
+		//string to float convertion
+		data.forEach(function(d){
+			d.USEffect =+ d.USEffect;
+			d.JPEffect =+ d.JPEffect;
+			d.top100Popularity =+ d.top100Popularity;
+			d.popularityOutside =+ d.popularityOutside;
+			d.differenceInPopularity =+ d.differenceInPopularity;
+		});
+
+		dataT = data;
+
+		//JS mapping function
+		var featureCategoriesFromData = data.map(function(d){return d.featureCategory;});
+
+		featureCategories = [];
+		for (var i = 0; i < featureCategoriesFromData.length; i++) {
+			if(featureCategories.indexOf(featureCategoriesFromData[i]) == -1){
+				featureCategories.push(featureCategoriesFromData[i]);
+			}
+		}
+
+		x.domain(d3.extent(data, function(d){return d.USEffect;})).nice();
+		//y.domain([0, 10]);
+		y.domain(d3.extent(data, function(d){return d.JPEffect;})).nice();
+
+		//add x axis
+		svg.append("g")
+			.attr("class", "x axis")
+			.attr("transform", "translate(0, " + height + ")")
+			.call(xAxis)
+			.append("text")
+			.attr("class", "label")
+			//.attr("transform", "rotate(-90)")
+			.attr("x", width - margin.left - margin.right)
+			.attr("y", -6)
+			.attr("dx", "-.71em")
+			.style("text_anchor", "end")
+			.style("fill", "black")
+			.text("effects of features in US market");
+
+		//add y axis
+		svg.append("g")
+			.attr("class", "y axis")
+			.call(yAxis)
+			.append("text")
+			.attr("class", "label")
+			.attr("transform", "rotate(-90)")
+			.attr("y", 6)
+			.attr("dy", ".71em")
+			.style("text_anchor", "end")
+			.style("fill", "black")
+			.text("effects of features in Japan market");
+
+		//add dots
+		var node = svg.selectAll(".dot")
+			.data(data)
+			.enter()
+			.append("circle")
+			.attr("class", "dot")
+			.attr("r", 3.5)
+			.attr("cx", function(d){
+				d["posX"] = x(d.USEffect);
+				return d.posX;})
+			.attr("cy", function(d){
+				d["posY"] = y(d.JPEffect);
+				return d.posY;})
+			//.style("fill", "grey")
+			.style("fill", function(d){return color(d.featureCategory);})
+			.style("opacity", 0.5);
+
+			nodeT = node;
+
+
+
+		//legend
+		var legend = svg.selectAll(".legend")
+			.data(featureCategories)
+			.enter()
+			.append("g")
+			.attr("class", "legend")
+			.attr("transform", function(d, i){return "translate(0," + i * 20 + ")";});
+
+		legend.append("circle")
+			.attr("r", 3.5)
+			.attr("cx", width - 110)
+			.attr("cy", height - 220)
+			//.attr("height", 18)
+			.style("opacity", 0.5)
+			.style("fill", color);
+
+		legend.append("text")
+			.attr("x", width - 100)
+			.attr("y", height - 220)
+			.attr("dy", ".35em")
+			//.style("text_anchor", "end")
+			.attr("font-size", "12px")
+			.attr("font-family", "Arial")
+			.text(function(d){return d;});
+
+
+		var tooltip = d3.select("#scatterplot")
+			.append("div")
+			.attr("class", "tooltip")
+			.style("opacity", 0.0);
+
+		node.on("mouseover", function(d){
+			tooltip.html(d.Feature + ": " + d.Choice)
+			.style("left", (d.posX + 55) + "px")
+			.style("top", (d.posY - 15)+ "px")
+			.style("opacity", 1.0);
+		})
+		.on("mousemove", function(d){
+			tooltip.style("left", d.cx + "px")
+			.style("top", d.cy + "px")
+		})
+		.on('mouseout', function(d){
+			tooltip.style('opacity', 0.0);
+		});
+	});
+
+</script>
+
+</body>
+</html>
